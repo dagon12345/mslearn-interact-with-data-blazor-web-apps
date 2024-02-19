@@ -15,16 +15,20 @@ public class OrdersController : Controller
         _db = db;
     }
 
-    [HttpGet]
-    public async Task<ActionResult<List<OrderWithStatus>>> GetOrders()
+    [HttpGet("{orderId}")]
+    public async Task<ActionResult<OrderWithStatus>> GetOrderWithStatus(int orderId)
     {
-        var orders = await _db.Orders
+        var order = await _db.Orders
+        .Where(o => o.OrderId  == orderId)
         .Include(o => o.Pizzas).ThenInclude(p => p.Special)
         .Include(o => o.Pizzas).ThenInclude(p => p.Toppings).ThenInclude(t => t.Topping)
-        .OrderByDescending(o => o.CreatedTime)
-        .ToListAsync();
+        .SingleOrDefaultAsync();
 
-        return orders.Select(o => OrderWithStatus.FromOrder(o)).ToList();
+        if(order == null)
+        {
+            return NotFound();
+        }
+        return OrderWithStatus.FromOrder(order);
     }
 
     [HttpPost]
